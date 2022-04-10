@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+	<meta charset="UTF-8">
+	<title>WorkWise Html Template</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="" />
+	<meta name="keywords" content="" />
+	<link rel="stylesheet" type="text/css" href="css/animate.css">
+	<link rel="stylesheet" href="https://www.jq22.com/jquery/bootstrap-4.2.1.css">
+	<link rel="stylesheet" type="text/css" href="css/line-awesome.css">
+	<link rel="stylesheet" type="text/css" href="css/line-awesome-font-awesome.min.css">
+	<link rel="stylesheet" href="https://www.jq22.com/jquery/font-awesome.4.7.0.css">
+	<link rel="stylesheet" type="text/css" href="lib/slick/slick.css">
+	<link rel="stylesheet" type="text/css" href="lib/slick/slick-theme.css">
+	<link rel="stylesheet" type="text/css" href="css/style.css">
+	<link rel="stylesheet" type="text/css" href="css/responsive.css">
+	<script type="text/javascript" src="https://code.jquery.com/jquery-1.10.0.js"></script>
+	<script type="text/javascript" src="https://code.jquery.com/jquery-1.4.1.min.js"></script>
+	<script type="text/javascript">
+		function f() {
+			var email =document.getElementById("email").value;
+			var password = document.getElementById("password").value;
+			var phone = document.getElementById("phone").value;
+			var User_name = document.getElementById("User_name").value;
+			var repeat_password = document.getElementById("repeat_password").value;
+			$.ajax({
+				url:"/registerIn",
+				type:"POST",
+				data:{
+					"email" : email,
+					"password" : password,
+					"repeat_password" : repeat_password,
+					"phone" : phone,
+					"User_name" : User_name,
+				},
+				dataType:"text",
+				success : function (result) {
+					alert(result)
+				}
+			})
+		}
+		function f1() {
+			var User_name = document.getElementById("User_name1").value;
+			var password = document.getElementById("password1").value;
+			$.ajax({
+				async: false,
+				url: "/userLogin",
+				type: "POST",
+				data: {
+					"User_name" : User_name,
+					"password" : password,
+				},
+				dataType: "text",
+				success : function (result) {
+					if(result !== null && result !== ""){
+						sessionStorage.setItem("id",result);
+						window.location.href="/index.html";
+						alert("你的ID是: "+result);
+					}else {
+						window.location.href="/sign-in.html";
+						alert("输入的密码或账户有错误");
+					}
+				}
+			})
+		}
+	</script>
+</head>
+<body class="sign-in">
+<div class="wrapper">
+	<div class="sign-in-page">
+		<div class="signin-popup">
+			<div class="signin-pop">
+				<div class="row">
+					<div class="col-lg-6">
+						<div class="cmp-info">
+							<div class="cm-logo">
+								<img src="images/cm-logo.png" alt="">
+								<p>欢迎来到登录/注册页面</p>
+							</div><!--cm-logo end-->
+							<img src="images/cm-main-img.png" alt="">
+						</div><!--cmp-info end-->
+					</div>
+					<div class="col-lg-6">
+						<div class="login-sec">
+							<ul class="sign-control">
+								<li data-tab="tab-1" class="current"><a href="#" title="">Sign in</a></li>
+								<li data-tab="tab-2"><a href="#" title="">Sign up</a></li>
+							</ul>
+							<div class="sign_in_sec current" id="tab-1">
+								<h3>Sign in</h3>
+								<form  action="userLogin" method="post" >
+									<div class="row">
+										<label style="color:red" th:text="${msg}"></label>
+										<div class="col-lg-12 no-pdd">
+											<div class="sn-field">
+												<input id="User_name1" name="User_name" placeholder="Username">
+												<i class="la la-user"></i>
+											</div><!--sn-field end-->
+										</div>
+										<div class="col-lg-12 no-pdd">
+											<div class="sn-field">
+												<input id="password1" name="password" placeholder="Password">
+												<i class="la la-lock"></i>
+											</div>
+										</div>
+										<div class="col-lg-12 no-pdd">
+											<div class="checky-sec">
+												<div class="fgt-sec">
+													<input type="checkbox" name="cc" id="c1">
+													<label for="c1">
+														<span></span>
+													</label>
+													<small>Remember me</small>
+												</div><!--fgt-sec end-->
+												<a href="#" title="">Forgot Password?</a>
+											</div>
+										</div>
+										<div class="col-lg-12 no-pdd">
+											<button onclick="f1()">Sign In</button>
+										</div>
+									</div>
+								</form>
+							</div><!--sign_in_sec end-->
+							<div class="sign_in_sec" id="tab-2">
+								<h3>Sign Up</h3>
+								<div class="dff-tab current" id="tab-3">
+									<form>
+										<div class="row">
+											<div class="col-lg-12 no-pdd">
+												<div class="sn-field">
+													Email
+													<input id = "email" name="Email" placeholder="Email">
+													<i class=""></i>
+												</div>
+											</div>
+											<div class="col-lg-12 no-pdd">
+												<div class="sn-field">
+													Password
+													<input type="password" id = "password" name="Password" placeholder="Password">
+													<i class=""></i>
+												</div>
+											</div>
+											<div class="col-lg-12 no-pdd">
+												<div class="sn-field">
+													Repeat Password
+													<input type="password" id = "repeat_password" name="Repeat Password" placeholder="Repeat Password">
+													<i class=""></i>
+												</div>
+											</div>
+											<div class="col-lg-12 no-pdd">
+												<div class="sn-field">
+													phone
+													<input id = "phone" name="phone" placeholder="phone">
+													<i class=""></i>
+												</div>
+											</div>
+											<div class="col-lg-12 no-pdd">
+												<div class="sn-field">
+													User_name
+													<input id = "User_name" name="User_name" placeholder="name">
+													<i class=""></i>
+												</div>
+											</div>
+											<div class="col-lg-12 no-pdd">
+												<button onclick="f()">Sign Up</button>
+											</div>
+										</div>
+									</form>
+								</div><!--dff-tab end-->
+							</div>
+						</div><!--login-sec end-->
+					</div>
+				</div>
+			</div><!--signin-pop end-->
+		</div><!--signin-popup end-->
+		<div class="footy-sec">
+			<div class="container">
+				<ul>
+					<li><a href="#" title="">Help Center</a></li>
+					<li><a href="#" title="">Privacy Policy</a></li>
+					<li><a href="#" title="">Community Guidelines</a></li>
+					<li><a href="#" title="">Cookies Policy</a></li>
+					<li><a href="#" title="">Career</a></li>
+					<li><a href="#" title="">Forum</a></li>
+					<li><a href="#" title="">Language</a></li>
+					<li><a href="#" title="">Copyright Policy</a></li>
+				</ul>
+				<p><img src="images/copy-icon.png" alt="">Copyright 2018</p>
+			</div>
+		</div><!--footy-sec end-->
+	</div><!--sign-in-page end-->
+</div><!--theme-layout end-->
+<script src="https://www.jq22.com/jquery/jquery-1.10.2.js"></script>
+<script type="text/javascript" src="js/popper.js"></script>
+<script type="text/javascript" src="js/bootstrap.min.js"></script>
+<script type="text/javascript" src="lib/slick/slick.min.js"></script>
+<script type="text/javascript" src="js/script.js"></script>
+</body>
+</html>
