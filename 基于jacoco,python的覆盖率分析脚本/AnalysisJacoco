@@ -1,0 +1,189 @@
+import json
+import sys
+import random
+import requests
+import shutil
+import re
+import os
+from bs4 import BeautifulSoup
+#python接收命令行参数
+
+#接收GITURL和邮箱地址
+gitUrl = sys.argv[1]
+email = sys.argv[2]
+flag = sys.argv[3]
+flag = float(flag.strip("%"))
+codeDir = ""
+ti = True
+#生成随机的15字符目录
+for i in range(15):
+    num = random.randint(0,9)
+    letter = chr(random.randint(97, 122))  # 取小写字母
+    s = str(random.choice([num,letter]))
+    codeDir += s
+
+if('/' in codeDir):
+    print("目录中有非法字符")
+    sys.exit()
+
+#验证邮箱格式
+emails = email.split(";")
+print(emails)
+def check_email_url(email_address):
+    # check '@'
+    at_count = 0
+    for element in email_address:
+        if element == '@':
+            at_count = at_count + 1
+
+    if at_count != 1:
+        return 0
+
+    # check ' '
+    for element in email_address:
+        if element == ' ':
+            return 0
+
+    # check '.com'
+    postfix = email_address[-4:]
+    if postfix != '.com':
+        return 0
+
+    # check char
+    for element in email_address:
+        if element.isalpha() == False and element.isdigit() == False:
+            if element != '.' and element != '@' and element != '_':
+                return 0
+    return 1
+
+for e in emails:
+    print(e)
+    if(check_email_url(e) == 0):
+        print("邮箱格式出错")
+        sys.exit()
+
+#拉取代码
+os.system("git clone " + gitUrl + " " + codeDir)
+os.system("cd " + codeDir + " && mvn test -Dmaven.test.failure.ignore=true && cd ../")
+try:
+
+    #先解析pom,拿到moduleList
+    pom = open(codeDir + '/pom.xml').read()
+    pomsoup = BeautifulSoup(pom,"xml")
+    ps = pomsoup.find_all('module')
+    moduleList = []
+    for i in ps:
+        moduleList.append(i.string)
+    print(len(moduleList))
+    number = len(moduleList)
+
+    result = "<p>本次单元测试报告如下所示，请查阅。本报告以模块为单位展示单元测试覆盖率及报告，覆盖率阈值为 : "+ str(flag) + "% </p>"
+
+    #对每一个模块的文件进行导入解析
+    for r in range(number):
+        add = codeDir + '/' +moduleList[r] + "/target/site/jacoco/index.html"
+        #add =  i + "\\target\\site\\jacoco\\index.html"
+        f = open(add).read()
+        soup = BeautifulSoup(f, "html.parser")
+
+
+        #解析模块名
+        moduleName = soup.find('h1').string
+
+        result += '<h3>' +"模块名称：" + moduleName + '</h3>'
+        #result += '</br>'
+        result += '<table border="1px" style="border-collapse:collapse;">'
+        #解析thead
+        result += '<thead style="font-weight: bold;">'
+        result += '<tr>'
+        heads = soup.find('thead')
+
+        #因为不需要前面几个元素，所以从第一个后进行一个截断
+        result += str(heads.find('td'))
+        headTd = heads.find_all('td')[7:14]
+        for td in range(3):
+            result += '<td>' + headTd[td*2+1].string + ", %"+ '</td>'
+        result += '</tr>'
+        result += '</thead>'
+
+        #解析tbody
+        result += '<tbody>'
+        body = soup.find('tbody')
+        bodyTr = body.find_all('tr')
+        for tds in bodyTr:
+            result += '<tr>'
+            result += str(tds.find('td'))
+            tds = tds.find_all('td')[7:14]
+            # for td1 in tds:
+            #     result += str(td1)
+            for i in range(3):
+                bodyNumber = tds[i*2].string
+                bodyNumber1 = tds[i*2+1].string
+                bodyResult = "{:.2%}".format((int(bodyNumber1) - int(bodyNumber)) / int(bodyNumber1))
+                result += '<td>' + str(bodyResult) + ' (' + str(int(bodyNumber1) - int(bodyNumber)) +'/' + bodyNumber1 + ")"+  "</td>"
+            result += '</tr>'
+        result += '</tbody>'
+
+        #解析tfoot
+        result += '<tfoot>'
+        result += '<tr>'
+        foot = soup.find('tfoot')
+        result += str(foot.find('td'))
+        footTd = foot.find_all('td')[7:14]
+
+        #计算行覆盖率，并且判断是否达到标准
+        line = footTd[1].string
+        missed = footTd[0].string
+        fin = "{:.2%}".format((int(line) - int(missed)) / int(line))
+        res = float(fin.strip("%"))
+        for td in range(3):
+            tfootNumber = footTd[td*2].string
+            tfootNumber1 = footTd[td*2+1].string
+            tfootResult = "{:.2%}".format((int(tfootNumber1) - int(tfootNumber)) / int(tfootNumber1))
+            result += '<td>' + str(tfootResult) + ' (' + str(int(tfootNumber1) - int(tfootNumber)) + '/' + tfootNumber1 + ")" + "</td>"
+        result += '</tr>'
+        result += '</tfoot>'
+        if(res < flag):
+            result += '<h4  style="color: red;">' + "模块的行覆盖率：" + fin + "   未通过" +'</h4>'
+            ti = False
+        else:
+            result += '<h4>' + "模块的行覆盖率：" + fin +  "   通过" +'</h4>'
+        result += '</table>'
+        result += '<table>'
+        #加入txt文件的内容
+
+        for root, dirs, files in os.walk(codeDir + '/' +moduleList[r] + "/target/surefire-reports/"):
+            for f in files:
+                if (os.path.join(root, f).__contains__(".txt") == True):
+                    file = os.path.join(root, f)
+                    for res in open(file,encoding='utf-8').readlines():
+                        if (res.__contains__("Test set") or res.__contains__("<<< ERROR!") or res.__contains__("Tests run")):
+                            result += '<tr><td>' + res + '</td></tr>'
+        result += '</table>'
+        result += '</br>'
+    result += "</table>"
+except Exception:
+    shutil.rmtree(codeDir)
+    print("已经删除了测试覆盖率报告相应的内容")
+#邮件发送
+url = "http://172.20.233.14:32433/mmpinterface/message/send_timely"
+print(len(result.encode()))
+result = json.dumps(result)
+title = ""
+if(ti == True):
+    title = "【通过】 "+gitUrl+" 单元测试报告"
+else:
+    title =  "【未通过】 "+gitUrl+" 单元测试报告"
+ebody = {
+    "appId":87,
+    "channelCode":"callback",
+    "msgContent":"{\"target\":"+json.dumps(email)+",\"title\":"+json.dumps(title)+",\"lang\":\"cn\",\"templateId\":\"\",\"cc\":\"\",\"content\":"+result+"}",
+    "msgType":1,
+    "target": email,
+    "templateCode":""
+}
+r = requests.post(url=url, json=ebody, headers={'Content-Type':'application/json','Host':'msgservice.vip.tp.local'})
+print(r.text)
+#删除目录
+shutil.rmtree(codeDir)
+print("已经删除了测试覆盖率报告相应的内容")
